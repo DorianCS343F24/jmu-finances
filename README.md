@@ -25,7 +25,7 @@ Note: this not about using 3p code in your own app (final project)
         1. fetches some json data from `data/data_sankey.json`
             * take a look at this file: 
                 1. what javascript data structures are used in this file?
-                1. what general data structure (for those of you have taken Dat Structures) might best represent the data that is in this file?
+                1. what general data structure (for those of you have taken Data Structures) might best represent the data that is in this file?
         1. uses the `d3-sankey` library to create a sankey diagram
 
 ## Make a Sankey using our own data
@@ -41,26 +41,27 @@ We will make 4 Sankey diagrams (more details follow) using data from JMU which y
     * often this just means in to a format expected by our own existing code, our (or third-party, a.k.a. "3p") libraries, tools, apps, etc.
 1. In this case, we will need to wrangle the data in `data/jmu.json` into a format that is expected by the `d3-sankey` library.
 1. In `main.js` edit the code where the current json data is loaded to instead load the correct data file, and before proceeding to the next parts of the code, construct data in the format expected by the `d3-sankey` library.
+PROTIP TODO: the name key shown in data_sankey.json can just be a number in the real thing
 
 ![Sankey Diagram](finances.jpg)
 
-### Sankey 1: JMU Student Costs
+### Sankey 1: JMU Student Costs - Victor Z.
 1. leftmost node: JMU Student
 1. second-to-leftmost nodes: Fall, Spring
 1. rightmost nodes: the `student itemized` costs from the `student-costs`
 
-### Sankey 2: JMU Student Auxiliary Comprehensive Fee
+### Sankey 2: JMU Student Auxiliary Comprehensive Fee - Aidan R.
 1. leftmost node: Auxiliary Comprehensive Fee (or "Comprehensive Fee")
 1. rightmost nodes: the `Auxiliary Comprehensive Fee Component` costs from the `student-costs`
 
-### Sankey 3: JMU Revenues
+### Sankey 3: JMU Revenues - Dorian Crawford
 1. leftmost nodes: JMU (positive) Revenue items
 1. second-to-leftmost nodes: JMU Revenue Categories (e.g. operating revenues, non-operating revenues, etc.)
 1. center node: JMU 
 1. second-to-rightmost nodes: JMU Expense (negative revenue) Categories (e.g. operating expenses)
 1. rightmost nodes: JMU Expense items (e.g. Instruction, Research, etc.)
 
-### Sankey 4: JMU Athletics Revenues
+### Sankey 4: JMU Athletics Revenues - All
 
 1. leftmost nodes: football, men's basketball, women's basketball, other sports, non-program specific
 1. second-to-leftmost nodes: JMU Athletics (positive) Revenue items (e.g. Ticker sales, etc.)

@@ -64,7 +64,7 @@ PROTIP TODO: the name key shown in data_sankey.json can just be a number in the 
 ### Sankey 4: JMU Athletics Revenues - All
 
 1. leftmost nodes: football, men's basketball, women's basketball, other sports, non-program specific
-1. second-to-leftmost nodes: JMU Athletics (positive) Revenue items (e.g. Ticker sales, etc.)
+1. second-to-leftmost nodes: JMU Athletics (positive) Revenue items (e.g. Ticket sales, etc.)
 1. center node: JMU Athletics
 1. second-to-rightmost nodes: JMU Athletics Expense categories (negative revenue) (e.g. Athletic student aid, etc.)
 1. rightmost nodes: football, men's basketball, women's basketball, other sports, non-program specific

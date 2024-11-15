@@ -21,8 +21,46 @@ const sankey = d3Sankey.sankey()
   .nodePadding(10)
   .extent([[1, 5], [width - 1, height - 5]]);
 
+
 async function init() {
-  const data = await d3.json("data/jmu.json");
+//  TRANSFORM INTO THE FOLLOWING FORMAT:
+//  {
+//   name: N (unique integer)
+//   value: "Value: X" (number/whatever)
+//   title: "string"
+//   category: X (something)
+//  }
+//  ------------------
+//  {
+//   source: N1 (the same unique integer whatever you want at the start has)
+//   target: N2 (the same unique integer whatever you want at the end has)
+//   value: X (some number)
+//  }
+
+
+  const unwrangledData = await d3.json("data/jmu.json");
+  let data = {
+    "nodes" : [],
+    "links" : [],
+  };
+  
+  let categoryArray = []; // contains all the categories we'll have
+
+  let id = 0; // number that increments for sankey's name
+  for (let obj of unwrangledData["jmu-revenues"]) {
+    let objType = obj["type"]; // how creative
+    if (!categoryArray.includes(objType)) {
+      categoryArray.push(objType);
+    }
+    let catIndex = categoryArray.indexOf(objType);
+    data["nodes"].push({
+      name: id,
+      value: "Value: " + obj["2023"].toString(),
+      title: obj["name"],
+      category: catIndex,
+    });
+    id++;
+  }
 
   // ALERT! LEAVE 28 AND BELOW AS IS
 

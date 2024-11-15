@@ -21,53 +21,140 @@ const sankey = d3Sankey.sankey()
   .nodePadding(10)
   .extent([[1, 5], [width - 1, height - 5]]);
 
-
-async function init() {
-//  TRANSFORM INTO THE FOLLOWING FORMAT:
-//  {
-//   name: N (unique integer)
-//   value: "Value: X" (number/whatever)
-//   title: "string"
-//   category: X (something)
-//  }
-//  ------------------
-//  {
-//   source: N1 (the same unique integer whatever you want at the start has)
-//   target: N2 (the same unique integer whatever you want at the end has)
-//   value: X (some number)
-//  }
-
-
-  const unwrangledData = await d3.json("data/jmu.json");
-  let data = {
-    "nodes" : [],
-    "links" : [],
-  };
-  
-  let categoryArray = []; // contains all the categories we'll have
-
+function wrangleKeys(revsAndExps) {
+  let listOfCategories = []
   let id = 0; // number that increments for sankey's name
-  for (let obj of unwrangledData["jmu-revenues"]) {
-    let objType = obj["type"]; // how creative
-    if (!categoryArray.includes(objType)) {
-      categoryArray.push(objType);
+  let data = []; // array to return
+  // wrangle that there data into the rootin' tootin' format, pardner
+  for (let obj of revsAndExps) {
+    if (!listOfCategories.includes(obj["type"])) {
+      listOfCategories.push(obj["type"]);
     }
-    let catIndex = categoryArray.indexOf(objType);
-    data["nodes"].push({
+    // add wrangl'd node to data
+    data.push({
       name: id,
-      value: "Value: " + obj["2023"].toString(),
+      value: obj["2023"],
       title: obj["name"],
-      category: catIndex,
+      category: obj["type"],
     });
     id++;
   }
+
+  // Adds categories to data, because they'll be middlemen (middlenodes?)
+  for (let cat of listOfCategories) {
+    data.push({
+      name: cat,
+      value: 0,
+      title: cat,
+      category: cat,
+    });
+  }
+
+  // Adds JMU to data, because it's the middle of everything
+  data.push({
+    name: "JMU",
+    value: 0,
+    title: "JMU",
+    category: "JMU",
+  });
+  // Adds "Nonoperating expenses (revenues)" to data, because it's an edge case
+  data.push({
+    name: "Nonoperating expenses (revenues)",
+    value: 0,
+    title: "Nonoperating expenses (revenues)",
+    category: "Nonoperating expenses (revenues)",
+  });
+  return data;
+}
+
+function createLinks(data) {
+  let links = [];
+  for (let obj of data) {
+    if (!typeof obj.name === typeof 1) {
+      break;
+    }
+    let from; // source
+    let to; // target
+    let catFrom; // category's source
+    let catTo; // category's target
+
+    // if it's a revenue, the object's flowing into its category
+    // if it's an expense, the category is flowing into the object
+    // this if statement figures that out
+    if (obj.value < 0 || obj.title.includes("Expense")) {
+      // nonoperating revenues are counted as expenses, sometimes. This prevents a weird visualization
+      if (obj.title === "Nonoperating revenues (expenses)") {
+        from = "Nonoperating expenses (revenues)";
+      } else { from = obj.category; };
+      to = obj.title;
+      catFrom = "JMU";
+      catTo = from;
+    }
+    else {
+      from = obj.title;
+      to = obj.category;
+      catFrom = to;
+      catTo = "JMU";
+    }
+
+    // add object + category to links
+    // ex: object -> category OR category -> object
+    links.push({
+      source: catFrom,
+      target: catTo,
+      value: 1,
+    });
+    // add category to JMU to links
+    // ex: category -> JMU OR JMU -> category
+    links.push({
+      source: from,
+      target: to,
+      // nonoperating revenues can be negative. No negatives!
+      value: Math.abs(obj.value),
+    });
+    return links;
+  }
+}
+
+function jmuNodesAndLinks(unwrangledData) {
+  // creates sankey-schema-compliant object, with keys of arrays with objs
+  // this'll be returned at the end
+  let revsAndExps = unwrangledData["jmu-revenues"];
+  let allNodes = wrangleKeys(revsAndExps);
+  let data = {
+    "nodes": wrangleKeys(revsAndExps),
+    "links": createLinks(allNodes),
+  };
+
+  return data;
+}
+
+async function init() {
+  //  TRANSFORM INTO THE FOLLOWING FORMAT:
+  //  {
+  //   name: N (unique integer)
+  //   value: "Value: X" (number/whatever)
+  //   title: "string"
+  //   category: X (something)
+  //  }
+  //  ------------------
+  //  {
+  //   source: N1 (the same unique integer whatever you want at the start has)
+  //   target: N2 (the same unique integer whatever you want at the end has)
+  //   value: X (some number)
+  //  }
+  // If a node does not appear as a target, or a source, it'll be at the leftmost/rightmost
+
+
+  const unwrangledData = await d3.json("data/jmu.json");
+  const data = jmuNodesAndLinks(unwrangledData);
 
   // ALERT! LEAVE 28 AND BELOW AS IS
 
   // Applies it to the data. We make a copy of the nodes and links objects
   // so as to avoid mutating the original.
   const { nodes, links } = sankey({
-  // const tmp = sankey({
+    // const tmp = sankey({
     nodes: data.nodes.map(d => Object.assign({}, d)),
     links: data.links.map(d => Object.assign({}, d))
   });
@@ -95,7 +182,8 @@ async function init() {
   rect.append("title")
     .text(d => {
       console.log('d', d);
-      return `${d.name}\n${format(d.value)}`});
+      return `${d.name}\n${format(d.value)}`
+    });
 
   // Creates the paths that represent the links.
   const link = svg.append("g")
@@ -143,7 +231,7 @@ async function init() {
     .attr("text-anchor", d => d.x0 < width / 2 ? "start" : "end")
     .text(d => d.title);
 
-    // Adds labels on the links.
+  // Adds labels on the links.
   svg.append("g")
     .selectAll()
     .data(links)
@@ -162,7 +250,7 @@ async function init() {
     });
 
   const svgNode = svg.node();
-    document.body.appendChild(svgNode);
+  document.body.appendChild(svgNode);
   return svgNode;
 }
 

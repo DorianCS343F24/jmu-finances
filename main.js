@@ -70,50 +70,59 @@ function wrangleKeys(revsAndExps) {
 function createLinks(data) {
   let links = [];
   for (let obj of data) {
-    if (!typeof obj.name === typeof 1) {
-      break;
-    }
     let from; // source
     let to; // target
-    let catFrom; // category's source
-    let catTo; // category's target
 
+    // HANDLES CATEGORIES AND JMU
+    if (!typeof obj.name === typeof 1) {
+
+      // checks to see if it's an expense
+      if (obj.title == "Nonoperating revenues (expenses)" || obj.title.includes("Expense")) {
+        from = "JMU";
+        to = obj.title;
+      }
+      else {
+        from = obj.title;
+        to = "JMU";
+      }
+
+      // arguably one could squash the two pushes together
+      // add JMU + category to links
+      // ex: category -> JMU OR JMU -> category
+      links.push({
+        source: from,
+        target: to,
+        value: 1,
+      });
+    }
+    // HANDLES REGULAR VALUES
     // if it's a revenue, the object's flowing into its category
     // if it's an expense, the category is flowing into the object
     // this if statement figures that out
-    if (obj.value < 0 || obj.title.includes("Expense")) {
-      // nonoperating revenues are counted as expenses, sometimes. This prevents a weird visualization
-      if (obj.title === "Nonoperating revenues (expenses)") {
-        from = "Nonoperating expenses (revenues)";
-      } else { from = obj.category; };
-      to = obj.title;
-      catFrom = "JMU";
-      catTo = from;
-    }
     else {
-      from = obj.title;
-      to = obj.category;
-      catFrom = to;
-      catTo = "JMU";
-    }
+      if (obj.value < 0 || obj.title.includes("Expense")) {
+        // nonoperating revenues are counted as expenses, sometimes. This prevents a weird visualization
+        if (obj.title == "Nonoperating revenues (expenses)") {
+          from = "Nonoperating expenses (revenues)";
+        } else { from = obj.category; };
 
-    // add object + category to links
-    // ex: object -> category OR category -> object
-    links.push({
-      source: catFrom,
-      target: catTo,
-      value: 1,
-    });
-    // add category to JMU to links
-    // ex: category -> JMU OR JMU -> category
-    links.push({
-      source: from,
-      target: to,
-      // nonoperating revenues can be negative. No negatives!
-      value: Math.abs(obj.value),
-    });
-    return links;
+        to = obj.title;
+      } else {
+        from = obj.title;
+        to = obj.category;
+      }
+
+      // add object + category to links
+      // ex: object -> category OR category -> object
+      links.push({
+        source: from,
+        target: to,
+        // nonoperating revenues can be negative. No negatives!
+        value: Math.abs(obj.value),
+      });
+    }  
   }
+  return links;
 }
 
 function jmuNodesAndLinks(unwrangledData) {
@@ -125,7 +134,6 @@ function jmuNodesAndLinks(unwrangledData) {
     "nodes": wrangleKeys(revsAndExps),
     "links": createLinks(allNodes),
   };
-
   return data;
 }
 

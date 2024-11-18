@@ -27,15 +27,19 @@ function wrangleKeys(revsAndExps) {
   let data = []; // array to return
   // wrangle that there data into the rootin' tootin' format, pardner
   for (let obj of revsAndExps) {
-    if (!listOfCategories.includes(obj["type"])) {
-      listOfCategories.push(obj["type"]);
+    let category = obj["type"];
+    if (category === "Nonoperating revenues") { // I didn't ask for this
+      category = "Nonoperating revenues (expenses)";
+    }
+    if (!listOfCategories.includes(category)) {
+      listOfCategories.push(category);
     }
     // add wrangl'd node to data
     data.push({
       name: id,
       value: obj["2023"],
       title: obj["name"],
-      category: obj["type"],
+      category: category,
     });
     id++;
   }
@@ -72,56 +76,45 @@ function createLinks(data) {
   for (let obj of data) {
     let from; // source
     let to; // target
-
-    // HANDLES CATEGORIES AND JMU
-    if (!typeof obj.name === typeof 1) {
-
+    const stringifiedTitle = String(obj.title);
+    if (obj.name === "JMU") { continue; } // I believe JMU should simply be skipped
+    // HANDLES CATEGORIES, which have IDs that aren't ints
+    else if (!(typeof obj.name == typeof 1)) {
       // checks to see if it's an expense
-      if (obj.title == "Nonoperating revenues (expenses)" || obj.title.includes("Expense")) {
+      if (stringifiedTitle.includes("Nonoperating revenues (expenses)") || stringifiedTitle.includes("Expense")) { 
         from = "JMU";
         to = obj.title;
-      }
-      else {
+      } else {
         from = obj.title;
         to = "JMU";
       }
-
-      // arguably one could squash the two pushes together
-      // add JMU + category to links
-      // ex: category -> JMU OR JMU -> category
-      links.push({
-        source: from,
-        target: to,
-        value: 1,
-      });
     }
     // HANDLES REGULAR VALUES
     // if it's a revenue, the object's flowing into its category
     // if it's an expense, the category is flowing into the object
     // this if statement figures that out
     else {
-      if (obj.value < 0 || obj.title.includes("Expense")) {
+      if (obj.value < 0 || stringifiedTitle.includes("Expense")) {
+        to = obj.name;
         // nonoperating revenues are counted as expenses, sometimes. This prevents a weird visualization
-        if (obj.title == "Nonoperating revenues (expenses)") {
+        if (stringifiedTitle.includes("Nonoperating revenues (expenses)")) {
           from = "Nonoperating expenses (revenues)";
-        } else { from = obj.category; };
-
-        to = obj.title;
+        } else { from = obj.category; }
       } else {
-        from = obj.title;
+        from = obj.name;
         to = obj.category;
       }
-
-      // add object + category to links
-      // ex: object -> category OR category -> object
-      links.push({
-        source: from,
-        target: to,
-        // nonoperating revenues can be negative. No negatives!
-        value: Math.abs(obj.value),
-      });
-    }  
+    } 
+    
+    // Add the link object to links
+    links.push({
+      source: from,
+      target: to,
+      // nonoperating revenues can be negative. No negatives!
+      value: Math.abs(obj.value),
+    });
   }
+  console.log(links);
   return links;
 }
 

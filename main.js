@@ -1,7 +1,7 @@
 import * as d3 from 'd3';
 import * as d3Sankey from "d3-sankey";
 
-const width = 928;
+const width = 928; //TODO adjust this so it looks cool
 const height = 600;
 const format = d3.format(",.0f");
 const linkColor = "source-target"; // source, target, source-target, or a color string.
@@ -22,21 +22,18 @@ const sankey = d3Sankey.sankey()
   .extent([[1, 5], [width - 1, height - 5]]);
 
 function wrangleKeys(revsAndExps) {
-  let listOfCategories = []
+  let categories = new Map();
   let id = 0; // number that increments for sankey's name
   let data = []; // array to return
   // wrangle that there data into the rootin' tootin' format, pardner
   for (let obj of revsAndExps) {
     let category = obj["type"];
-    if (category === "Nonoperating revenues") { // I didn't ask for this
-      category = "Nonoperating revenues (expenses)";
-    }
-    if (!listOfCategories.includes(category)) {
-      listOfCategories.push(category);
+    if (!categories.has(category)) {
+      categories.set(obj["type"], obj["category"]);
     }
     // add wrangl'd node to data
     data.push({
-      name: id,
+      name: obj["category"] + id,
       value: obj["2023"],
       title: obj["name"],
       category: category,
@@ -45,12 +42,12 @@ function wrangleKeys(revsAndExps) {
   }
 
   // Adds categories to data, because they'll be middlemen (middlenodes?)
-  for (let cat of listOfCategories) {
+  for (let [key, value] of categories) {
     data.push({
-      name: cat,
+      name: key,
       value: 0,
-      title: cat,
-      category: cat,
+      title: key,
+      category: value,
     });
   }
 
@@ -63,10 +60,10 @@ function wrangleKeys(revsAndExps) {
   });
   // Adds "Nonoperating expenses (revenues)" to data, because it's an edge case
   data.push({
-    name: "Nonoperating expenses (revenues)",
+    name: "Nonoperating revenues (expenses)",
     value: 0,
-    title: "Nonoperating expenses (revenues)",
-    category: "Nonoperating expenses (revenues)",
+    title: "Nonoperating revenues (expenses)",
+    category: "expense",
   });
   return data;
 }
@@ -76,12 +73,11 @@ function createLinks(data) {
   for (let obj of data) {
     let from; // source
     let to; // target
-    const stringifiedTitle = String(obj.title);
-    if (obj.name === "JMU") { continue; } // I believe JMU should simply be skipped
-    // HANDLES CATEGORIES, which have IDs that aren't ints
-    else if (!(typeof obj.name == typeof 1)) {
+    if (obj.name === "JMU") { continue; } // JMU should simply be skipped
+    // HANDLES CATEGORIES, which have IDs that don't have ints at the end
+    else if (isNaN(obj.name.charAt(obj.name.length - 1))) { // yeah this line sucks lol
       // checks to see if it's an expense
-      if (stringifiedTitle.includes("Nonoperating revenues (expenses)") || stringifiedTitle.includes("Expense")) { 
+      if (obj.category === "expense") { 
         from = "JMU";
         to = obj.title;
       } else {
@@ -93,12 +89,13 @@ function createLinks(data) {
     // if it's a revenue, the object's flowing into its category
     // if it's an expense, the category is flowing into the object
     // this if statement figures that out
+    // TODO: Fix this so for expense, account is the source, item is the target
     else {
-      if (obj.value < 0 || stringifiedTitle.includes("Expense")) {
+      if (obj.name.slice(0, 3) === "exp") {
         to = obj.name;
         // nonoperating revenues are counted as expenses, sometimes. This prevents a weird visualization
-        if (stringifiedTitle.includes("Nonoperating revenues (expenses)")) {
-          from = "Nonoperating expenses (revenues)";
+        if (obj.category.includes("Nonoperating revenues")) {
+          from = "Nonoperating revenues (expenses)";
         } else { from = obj.category; }
       } else {
         from = obj.name;
